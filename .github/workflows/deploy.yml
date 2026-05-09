@@ -1,46 +1,58 @@
-name: Deploy pos Backend
+name: Deploy to Production
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   deploy:
+    name: Deploy to Production
     runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup SSH
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install & build frontend assets
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          npm ci
+          npm run build
 
-      - name: Deploy to VPS
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd /srv/pos-backend
+      - name: Deploy via SSH (rsync)
+        uses: easingthemes/ssh-deploy@v5
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.PRODUCTION_HOST }}
+          REMOTE_USER: ${{ secrets.PRODUCTION_USER }}
+          SOURCE: "./"
+          TARGET: ${{ secrets.PRODUCTION_PATH }}
+          EXCLUDE: ".git, node_modules, .env, storage/logs, storage/framework/sessions"
+          ARGS: "-avzr --delete"
 
-            echo "Pulling latest code..."
-            git pull origin main
-
-            echo "Installing dependencies..."
-            composer install --no-dev --optimize-autoloader
-
-            echo "Running migrations..."
+      - name: Run post-deploy commands
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          script: |
+            cd ${{ secrets.PRODUCTION_PATH }}
+            php artisan down --retry=60
+            composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
             php artisan migrate --force
-
-            echo "Caching Laravel..."
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
-
-            echo "Restarting services..."
-            sudo systemctl restart php8.3-fpm
-            sudo systemctl reload nginx
-
-          EOF
+            php artisan event:cache
+            php artisan queue:restart
+            php artisan up
+            echo "✅ Production deploy complete"
