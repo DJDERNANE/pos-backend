@@ -27,16 +27,16 @@ jobs:
           npm ci
           npm run build
 
-      - name: Deploy via SSH (rsync)
-        uses: easingthemes/ssh-deploy@v5
+      - name: Copy files to server via SCP
+        uses: appleboy/scp-action@v0.1.7
         with:
-          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.PRODUCTION_HOST }}
-          REMOTE_USER: ${{ secrets.PRODUCTION_USER }}
-          SOURCE: "./"
-          TARGET: ${{ secrets.PRODUCTION_PATH }}
-          EXCLUDE: ".git, node_modules, .env, storage/logs, storage/framework/sessions"
-          ARGS: "-avzr --delete"
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          source: "./"
+          target: ${{ secrets.PRODUCTION_PATH }}
+          rm: false
+          exclude: ".git,node_modules,.env,storage/logs,storage/framework/sessions"
 
       - name: Run post-deploy commands
         uses: appleboy/ssh-action@v1
