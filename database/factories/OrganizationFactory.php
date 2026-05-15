@@ -19,7 +19,6 @@ class OrganizationFactory extends Factory
             'phone' => fake()->phoneNumber(),
             'email' => fake()->unique()->companyEmail(),
             'currency_code' => fake()->currencyCode(),
-            'timezone' => fake()->timezone(),
             'is_active' => fake()->boolean(90),
         ];
     }
