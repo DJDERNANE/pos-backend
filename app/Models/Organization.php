@@ -18,7 +18,6 @@ class Organization extends Model
         'phone',
         'email',
         'currency_code',
-        'timezone',
         'is_active',
     ];
 
