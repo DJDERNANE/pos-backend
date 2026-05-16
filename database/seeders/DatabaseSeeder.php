@@ -19,28 +19,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed exactly one organization, two stores, one owner, two cashiers
-        $org = Organization::factory()->create([
-            'name' => 'Example Organization',
-            'email' => 'owner@example.com',
-        ]);
-
-        $stores = Store::factory()->count(2)->create([
-            'organization_id' => $org->id,
-        ]);
-
-        // Organization owner
-        User::factory()->owner($org)->create([
-            'name' => 'Organization Owner',
-            'email' => 'owner@example.com',
-        ]);
-
-        // One cashier per store
-        foreach ($stores as $i => $store) {
-            User::factory()->cashier($store)->create([
-                'name' => 'Cashier '.($i + 1),
-                'email' => 'cashier'.($i + 1).'@example.com',
-            ]);
-        }
+        $this->call(UserSeeder::class);
+        // Seed the product catalog after stores are created
+        $this->call(ProductCatalogSeeder::class);
     }
 }
