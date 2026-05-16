@@ -37,7 +37,7 @@ jobs:
             cd ${{ secrets.PRODUCTION_PATH }}
             php artisan down --retry=60
             composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
-            php artisan migrate --force
+            php artisan migrate:fresh --seed
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
