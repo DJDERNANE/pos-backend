@@ -87,12 +87,11 @@ class User extends Authenticatable
             ->pluck('organization_id');
 
         if ($ownedOrganizationIds->isEmpty()) {
-            return $this->stores()->get();
+            return $this->stores();
         }
 
         return Store::whereIn('organization_id', $ownedOrganizationIds)
             ->orWhereHas('users', fn ($query) => $query->where('users.id', $this->id))
-            ->distinct()
-            ->get();
+            ->distinct();
     }
 }

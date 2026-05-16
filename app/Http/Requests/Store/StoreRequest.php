@@ -1,14 +1,14 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Store;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class CreateStoreRequest extends FormRequest
+class StoreRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user() !== null;
+        return true;
     }
 
     public function rules(): array
@@ -16,9 +16,9 @@ class CreateStoreRequest extends FormRequest
         return [
             'organization_id' => ['required', 'uuid', 'exists:organizations,id'],
             'name' => ['required', 'string', 'max:255'],
-            'type' => ['nullable', 'string', 'max:100'],
+            'type' => ['nullable', 'string', 'max:50'],
             'phone' => ['nullable', 'string', 'max:20'],
-            'address' => ['nullable', 'string', 'max:255'],
+            'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string', 'max:100'],
         ];
     }
