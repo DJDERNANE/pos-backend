@@ -61,25 +61,18 @@ class PricingService
         $price->delete();
     }
 
-    public function scanBarcode(string $barcode, string $storeId, User $user): ?StoreVariantPrice
+    public function scanBarcode(string $barcode, string $storeId, User $user): ?ProductVariant
     {
         $this->verifyStoreAccess($storeId, $user);
 
-        // Find variant by barcode first
-        $variant = ProductVariant::whereHas('barcodes', function ($q) use ($barcode) {
-            $q->where('barcode', $barcode);
-        })->first();
-
-        if (!$variant) {
-            return null;
-        }
-
-        // Return the price for this variant in this store
-        // If multiple units exist, return the base unit (piece) or the first one
-        return StoreVariantPrice::where('store_id', $storeId)
-            ->where('product_variant_id', $variant->id)
-            ->with(['variant.product', 'variant.barcodes'])
-            ->orderByRaw("CASE WHEN unit_type = 'piece' THEN 0 ELSE 1 END")
+        // Find variant by barcode globally
+        return ProductVariant::whereHas('barcodes', function ($q) use ($barcode) {
+                $q->where('barcode', $barcode);
+            })
+            ->with(['product', 'barcodes', 'storeVariantPrices' => function ($q) use ($storeId) {
+                // Load prices ONLY for the current store
+                $q->where('store_id', $storeId);
+            }])
             ->first();
     }
 

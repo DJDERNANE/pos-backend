@@ -88,14 +88,14 @@ class PricingController extends ApiController
         }
 
         try {
-            $price = $this->pricingService->scanBarcode($barcode, $storeId, $request->user());
+            $variant = $this->pricingService->scanBarcode($barcode, $storeId, $request->user());
 
-            if (!$price) {
-                return $this->errorResponse('Item not found in this store', 404);
+            if (!$variant) {
+                return $this->errorResponse('Item not found in global catalog', 404);
             }
 
             return $this->successResponse(
-                new StorePriceResource($price),
+                new \App\Http\Resources\VariantResource($variant),
                 'Item scanned successfully'
             );
         } catch (\Exception $e) {

@@ -32,10 +32,7 @@ class ProductService
 
     public function findById(string $id, User $user): ?Product
     {
-        $product = Product::with('variants')->findOrFail($id);
-        $this->verifyOrgAccess($product->organization_id, $user);
-        
-        return $product;
+        return Product::with('variants')->findOrFail($id);
     }
 
     public function update(string $id, ProductDTO $dto, User $user): Product

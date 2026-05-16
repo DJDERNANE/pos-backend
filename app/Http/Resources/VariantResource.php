@@ -22,7 +22,7 @@ class VariantResource extends JsonResource
             'is_default' => (bool)$this->is_default,
             'is_active' => (bool)$this->is_active,
             'barcodes' => BarcodeResource::collection($this->whenLoaded('barcodes')),
-            'prices' => StorePriceResource::collection($this->whenLoaded('storePrices')),
+            'prices' => StorePriceResource::collection($this->whenLoaded('storeVariantPrices')),
             'created_at' => $this->created_at,
         ];
     }
