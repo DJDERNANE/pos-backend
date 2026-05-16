@@ -45,4 +45,47 @@ class ProductVariant extends Model
     {
         return $this->hasMany(InventoryItem::class);
     }
+
+    // =========================================================================
+    // PRICING RELATIONSHIPS  (new additions)
+    // =========================================================================
+ 
+    /**
+     * All pricing records across every store for this variant.
+     */
+    public function storeVariantPrices(): HasMany
+    {
+        return $this->hasMany(StoreVariantPrice::class, 'product_variant_id');
+    }
+ 
+    /**
+     * Convenience: prices scoped to a specific store.
+     */
+    public function pricesForStore(string $storeId): HasMany
+    {
+        return $this->storeVariantPrices()
+            ->where('store_id', $storeId);
+    }
+ 
+    /**
+     * Convenience: the single default price for a given store.
+     */
+    public function defaultPriceForStore(string $storeId): ?StoreVariantPrice
+    {
+        return $this->storeVariantPrices()
+            ->where('store_id', $storeId)
+            ->where('is_default', true)
+            ->first();
+    }
+ 
+    /**
+     * Convenience: price for a specific store + unit type combination.
+     */
+    public function priceForStoreAndUnit(string $storeId, UnitType $unit): ?StoreVariantPrice
+    {
+        return $this->storeVariantPrices()
+            ->where('store_id', $storeId)
+            ->where('unit_type', $unit->value)
+            ->first();
+    }
 }

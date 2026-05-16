@@ -45,4 +45,35 @@ class Store extends Model
             ->withPivot(['id', 'is_active'])
             ->withTimestamps();
     }
+    // =========================================================================
+    // PRICING RELATIONSHIPS  (new additions)
+    // =========================================================================
+ 
+    /**
+     * All pricing records configured for this store.
+     */
+    public function storeVariantPrices(): HasMany
+    {
+        return $this->hasMany(StoreVariantPrice::class, 'store_id');
+    }
+ 
+    /**
+     * Convenience: all prices for a specific variant in this store.
+     */
+    public function pricesForVariant(string $variantId): HasMany
+    {
+        return $this->storeVariantPrices()
+            ->where('product_variant_id', $variantId);
+    }
+ 
+    /**
+     * Convenience: the default price for a specific variant in this store.
+     */
+    public function defaultPriceForVariant(string $variantId): ?StoreVariantPrice
+    {
+        return $this->storeVariantPrices()
+            ->where('product_variant_id', $variantId)
+            ->where('is_default', true)
+            ->first();
+    }
 }
