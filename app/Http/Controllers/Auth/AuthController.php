@@ -73,6 +73,8 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
+        $stores = $user->accessibleStores();
+        $orgRole = $user->organizationUsers()->first()?->role;
 
         return response()->json([
             'success' => true,
@@ -81,9 +83,11 @@ class AuthController extends Controller
             'data' => [
                 'user' => $user,
 
+                'organization_role' => $orgRole,
                 'organizations' => $user->organizations()->get(),
 
-                'stores' => $user->stores()->get(),
+                'stores' => $stores,
+                'store_count' => $stores->count(),
 
                 'current_store_id' => session('current_store_id'),
             ],

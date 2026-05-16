@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Store;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -77,5 +78,21 @@ class User extends Authenticatable
             ->using(StoreUser::class)
             ->withPivot(['id', 'is_active'])
             ->withTimestamps();
+    }
+
+    public function accessibleStores()
+    {
+        $ownedOrganizationIds = $this->organizationUsers()
+            ->where('role', 'owner')
+            ->pluck('organization_id');
+
+        if ($ownedOrganizationIds->isEmpty()) {
+            return $this->stores()->get();
+        }
+
+        return Store::whereIn('organization_id', $ownedOrganizationIds)
+            ->orWhereHas('users', fn ($query) => $query->where('users.id', $this->id))
+            ->distinct()
+            ->get();
     }
 }

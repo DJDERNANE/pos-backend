@@ -19,65 +19,28 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create organizations
-        $org1 = Organization::factory()->create([
-            'name' => 'Main Organization',
-            'email' => 'org@example.com',
+        // Seed exactly one organization, two stores, one owner, two cashiers
+        $org = Organization::factory()->create([
+            'name' => 'Example Organization',
+            'email' => 'owner@example.com',
         ]);
 
-        $org2 = Organization::factory()->create([
-            'name' => 'Secondary Organization',
+        $stores = Store::factory()->count(2)->create([
+            'organization_id' => $org->id,
         ]);
 
-        // Create stores
-        $store1 = Store::factory()->create([
-            'organization_id' => $org1->id,
-            'name' => 'Store 1',
+        // Organization owner
+        User::factory()->owner($org)->create([
+            'name' => 'Organization Owner',
+            'email' => 'owner@example.com',
         ]);
 
-        $store2 = Store::factory()->create([
-            'organization_id' => $org1->id,
-            'name' => 'Store 2',
-        ]);
-
-        $store3 = Store::factory()->create([
-            'organization_id' => $org2->id,
-            'name' => 'Store 3',
-        ]);
-
-        // Create test user
-        $user = User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-
-        // Create organization user relationships
-        OrganizationUser::factory()->create([
-            'organization_id' => $org1->id,
-            'user_id' => $user->id,
-            'role' => 'owner',
-        ]);
-
-        OrganizationUser::factory()->create([
-            'organization_id' => $org2->id,
-            'user_id' => $user->id,
-            'role' => 'admin',
-        ]);
-
-        // Create store user relationships
-        StoreUser::factory()->create([
-            'store_id' => $store1->id,
-            'user_id' => $user->id,
-        ]);
-
-        StoreUser::factory()->create([
-            'store_id' => $store2->id,
-            'user_id' => $user->id,
-        ]);
-
-        StoreUser::factory()->create([
-            'store_id' => $store3->id,
-            'user_id' => $user->id,
-        ]);
+        // One cashier per store
+        foreach ($stores as $i => $store) {
+            User::factory()->cashier($store)->create([
+                'name' => 'Cashier '.($i + 1),
+                'email' => 'cashier'.($i + 1).'@example.com',
+            ]);
+        }
     }
 }

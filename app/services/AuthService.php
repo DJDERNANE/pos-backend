@@ -37,7 +37,7 @@ class AuthService
 
         $orgRole = $user->organizationUsers()->first()?->role;
 
-        $stores = $user->stores()->get();
+        $stores = $user->accessibleStores();
 
         Log::info('Login token generated', ['user_id' => $user->id, 'org_role' => $orgRole, 'store_count' => $stores->count()]);
 
