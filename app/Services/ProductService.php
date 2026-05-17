@@ -14,14 +14,7 @@ class ProductService
     public function createFull(array $data, User $user): Product
     {
         return DB::transaction(function () use ($data, $user) {
-            // 1. Create Product
-            $product = Product::create([
-                'name' => $data['name'],
-                'description' => $data['description'] ?? null,
-                'is_active' => $data['is_active'] ?? true,
-            ]);
-
-            // If no variants provided, create a default one from top-level fields
+            // Normalize variants list first to make iteration consistent
             $variantsData = $data['variants'] ?? [
                 [
                     'name' => $data['name'],
@@ -34,34 +27,79 @@ class ProductService
                 ]
             ];
 
+            $product = null;
+
+            // 1. Determine if any variant already exists globally by barcode
             foreach ($variantsData as $vData) {
-                // 2. Create Variant
-                $variant = $product->variants()->create([
-                    'name' => $vData['name'],
-                    'sku' => $vData['sku'] ?? null,
-                    'unit' => $vData['unit'] ?? null,
-                    'quantity_value' => $vData['quantity_value'] ?? null,
-                    'is_default' => $vData['is_default'] ?? false,
+                $barcode = $vData['barcode'] ?? null;
+                if (!$barcode && isset($vData['barcodes'][0]['barcode'])) {
+                    $barcode = $vData['barcodes'][0]['barcode'];
+                }
+
+                if (!empty($barcode)) {
+                    $existingVariant = \App\Models\ProductVariant::whereHas('barcodes', function ($q) use ($barcode) {
+                        $q->where('barcode', $barcode);
+                    })->first();
+
+                    if ($existingVariant) {
+                        $product = $existingVariant->product;
+                        break;
+                    }
+                }
+            }
+
+            // 2. If no existing product was matched by barcode, create a new one
+            if (!$product) {
+                $product = Product::create([
+                    'name' => $data['name'],
+                    'description' => $data['description'] ?? null,
+                    'is_active' => $data['is_active'] ?? true,
                 ]);
+            }
 
-                // 3. Create Barcodes
-                $barcodes = $vData['barcodes'] ?? [];
-                if (isset($vData['barcode'])) {
-                    $barcodes[] = ['barcode' => $vData['barcode']];
+            // 3. Process variants
+            foreach ($variantsData as $vData) {
+                $barcode = $vData['barcode'] ?? null;
+                if (!$barcode && isset($vData['barcodes'][0]['barcode'])) {
+                    $barcode = $vData['barcodes'][0]['barcode'];
                 }
 
-                foreach ($barcodes as $bData) {
-                    $variant->barcodes()->create([
-                        'barcode' => $bData['barcode'],
-                        'type' => $bData['type'] ?? null,
+                // Check if this variant already exists under the product
+                $variant = null;
+                if (!empty($barcode)) {
+                    $variant = $product->variants()->whereHas('barcodes', function ($q) use ($barcode) {
+                        $q->where('barcode', $barcode);
+                    })->first();
+                }
+
+                if (!$variant) {
+                    $variant = $product->variants()->create([
+                        'name' => $vData['name'],
+                        'sku' => $vData['sku'] ?? null,
+                        'unit' => $vData['unit'] ?? null,
+                        'quantity_value' => $vData['quantity_value'] ?? null,
+                        'is_default' => $vData['is_default'] ?? false,
                     ]);
+
+                    // Create barcodes
+                    $barcodes = $vData['barcodes'] ?? [];
+                    if (isset($vData['barcode'])) {
+                        $barcodes[] = ['barcode' => $vData['barcode']];
+                    }
+
+                    foreach ($barcodes as $bData) {
+                        $variant->barcodes()->create([
+                            'barcode' => $bData['barcode'],
+                            'type' => $bData['type'] ?? null,
+                        ]);
+                    }
                 }
 
-                // 4. Create Prices & Inventory if store_id provided
+                // 4. Create or Update Prices & Inventory if store_id is provided
                 if (isset($data['store_id'])) {
                     $prices = $vData['prices'] ?? [];
                     
-                    // If no explicit prices but top-level sell/buy provided, create a 'piece' price
+                    // Normalize default piece price
                     if (empty($prices) && (isset($vData['sell_price']) || isset($vData['buy_price']))) {
                         $prices[] = [
                             'unit_type' => 'piece',
@@ -73,23 +111,31 @@ class ProductService
                     }
 
                     foreach ($prices as $pData) {
-                        $variant->storeVariantPrices()->create([
-                            'store_id' => $data['store_id'],
-                            'unit_type' => $pData['unit_type'],
-                            'sell_price' => $pData['sell_price'],
-                            'buy_price' => $pData['buy_price'] ?? null,
-                            'quantity_per_unit' => $pData['quantity_per_unit'] ?? 1,
-                            'is_default' => $pData['is_default'] ?? false,
-                        ]);
+                        $variant->storeVariantPrices()->updateOrCreate(
+                            [
+                                'store_id' => $data['store_id'],
+                                'unit_type' => $pData['unit_type'],
+                            ],
+                            [
+                                'sell_price' => $pData['sell_price'],
+                                'buy_price' => $pData['buy_price'] ?? null,
+                                'quantity_per_unit' => $pData['quantity_per_unit'] ?? 1,
+                                'is_default' => $pData['is_default'] ?? false,
+                            ]
+                        );
                     }
 
-                    // 5. Create Inventory
+                    // 5. Create or Update Inventory Item
                     $invData = $vData['inventory'] ?? ['quantity' => $vData['quantity'] ?? 0];
-                    $variant->inventoryItems()->create([
-                        'store_id' => $data['store_id'],
-                        'quantity' => $invData['quantity'],
-                        'low_stock_alert' => $invData['low_stock_alert'] ?? 5,
-                    ]);
+                    $variant->inventoryItems()->updateOrCreate(
+                        [
+                            'store_id' => $data['store_id'],
+                        ],
+                        [
+                            'quantity' => $invData['quantity'],
+                            'low_stock_alert' => $invData['low_stock_alert'] ?? 5,
+                        ]
+                    );
                 }
             }
 

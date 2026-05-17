@@ -47,6 +47,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('store-prices', \App\Http\Controllers\Api\V1\PricingController::class);
 
         // Inventory
+        Route::post('inventory/bulk', [\App\Http\Controllers\Api\V1\InventoryController::class, 'bulkStore']);
         Route::get('inventory', [\App\Http\Controllers\Api\V1\InventoryController::class, 'index']);
         Route::get('inventory/low-stock', [\App\Http\Controllers\Api\V1\InventoryController::class, 'lowStock']);
         Route::get('inventory/search', [\App\Http\Controllers\Api\V1\InventoryController::class, 'search']);

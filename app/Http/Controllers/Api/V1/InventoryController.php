@@ -102,4 +102,36 @@ class InventoryController extends ApiController
             return $this->errorResponse($e->getMessage(), 403);
         }
     }
+
+    public function bulkStore(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'store_id' => 'required|uuid|exists:stores,id',
+            'items' => 'required|array|min:1',
+            'items.*.name' => 'required|string|max:255',
+            'items.*.barcode' => 'nullable|string|max:255',
+            'items.*.sell_price' => 'required|numeric|min:0',
+            'items.*.buy_price' => 'nullable|numeric|min:0',
+            'items.*.quantity' => 'required|numeric|min:0',
+            'items.*.sku' => 'nullable|string|max:255',
+            'items.*.unit_type' => 'nullable|string|in:piece,pack,box',
+            'items.*.quantity_per_unit' => 'nullable|integer|min:1',
+        ]);
+
+        try {
+            $processed = $this->inventoryService->bulkAdd(
+                $validated['store_id'],
+                $validated['items'],
+                $request->user()
+            );
+
+            return $this->successResponse(
+                $processed,
+                'Bulk items processed and added to inventory successfully',
+                201
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 400);
+        }
+    }
 }
