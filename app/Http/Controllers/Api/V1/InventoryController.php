@@ -16,16 +16,24 @@ class InventoryController extends ApiController
     public function index(Request $request): JsonResponse
     {
         $storeId = $request->query('store_id');
+        $query = $request->query('q');
 
         if (!$storeId) {
             return $this->errorResponse('store_id is required', 400);
         }
 
         try {
-            $inventory = $this->inventoryService->getInventoryForStore($storeId, $request->user());
+            if ($query) {
+                $inventory = $this->inventoryService->search($storeId, $query, $request->user());
+                $message = 'Inventory search results';
+            } else {
+                $inventory = $this->inventoryService->getInventoryForStore($storeId, $request->user());
+                $message = 'Inventory retrieved successfully';
+            }
+
             return $this->successResponse(
                 InventoryResource::collection($inventory),
-                'Inventory retrieved successfully'
+                $message
             );
         } catch (\Exception $e) {
             return $this->errorResponse($e->getMessage(), 403);

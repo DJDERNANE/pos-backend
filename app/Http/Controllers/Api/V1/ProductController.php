@@ -88,6 +88,21 @@ class ProductController extends ApiController
         }
     }
 
+    public function storeFull(Request $request): JsonResponse
+    {
+        try {
+            $product = $this->productService->createFull($request->all(), $request->user());
+
+            return $this->successResponse(
+                new ProductResource($product),
+                'Product and related records created successfully',
+                201
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 400);
+        }
+    }
+
     public function search(Request $request): JsonResponse
     {
         $query = $request->query('q', '');

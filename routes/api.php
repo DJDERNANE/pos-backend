@@ -27,6 +27,7 @@ Route::prefix('v1')->group(function () {
         Route::post('stores/{store}/assign-user', [\App\Http\Controllers\Api\V1\StoreController::class, 'assignUser']);
 
         // Products
+        Route::post('products/full', [\App\Http\Controllers\Api\V1\ProductController::class, 'storeFull']);
         Route::get('products/search', [\App\Http\Controllers\Api\V1\ProductController::class, 'search']);
         Route::apiResource('products', \App\Http\Controllers\Api\V1\ProductController::class);
 
