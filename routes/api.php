@@ -46,6 +46,27 @@ Route::prefix('v1')->group(function () {
         Route::get('pos/scan/{barcode}', [\App\Http\Controllers\Api\V1\PricingController::class, 'scan']);
         Route::apiResource('store-prices', \App\Http\Controllers\Api\V1\PricingController::class);
 
+        // Cart / POS
+        Route::get('cart', [\App\Http\Controllers\Api\V1\CartController::class, 'index']);
+        Route::post('cart/scan', [\App\Http\Controllers\Api\V1\CartController::class, 'scan']);
+        Route::post('cart/items/add', [\App\Http\Controllers\Api\V1\CartController::class, 'addItem']);
+        Route::put('cart/items/{id}', [\App\Http\Controllers\Api\V1\CartController::class, 'updateItem']);
+        Route::delete('cart/items/{id}', [\App\Http\Controllers\Api\V1\CartController::class, 'removeItem']);
+        Route::delete('cart/clear', [\App\Http\Controllers\Api\V1\CartController::class, 'clear']);
+
+        // Checkout
+        Route::post('checkout', [\App\Http\Controllers\Api\V1\CheckoutController::class, 'store']);
+
+        // Sales
+        Route::get('sales', [\App\Http\Controllers\Api\V1\SalesController::class, 'index']);
+        Route::get('sales/{id}', [\App\Http\Controllers\Api\V1\SalesController::class, 'show']);
+        Route::get('sales/{id}/invoice', [\App\Http\Controllers\Api\V1\SalesController::class, 'invoice']);
+
+        // Inventory ledger
+        Route::get('inventory/movements', [\App\Http\Controllers\Api\V1\InventoryController::class, 'movements']);
+        Route::get('inventory/stock/{variant}', [\App\Http\Controllers\Api\V1\InventoryController::class, 'stock']);
+        Route::post('inventory/adjust', [\App\Http\Controllers\Api\V1\InventoryController::class, 'adjust']);
+
         // Inventory
         Route::post('inventory/bulk', [\App\Http\Controllers\Api\V1\InventoryController::class, 'bulkStore']);
         Route::get('inventory', [\App\Http\Controllers\Api\V1\InventoryController::class, 'index']);

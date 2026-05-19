@@ -5,14 +5,17 @@ namespace App\Http\Controllers\Api\V1;
 use App\DTOs\StorePriceDTO;
 use App\Http\Requests\Pricing\StorePriceRequest;
 use App\Http\Resources\StorePriceResource;
+use App\Http\Resources\PosScanResource;
 use App\Services\PricingService;
+use App\Services\InventoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PricingController extends ApiController
 {
     public function __construct(
-        private PricingService $pricingService
+        private PricingService $pricingService,
+        private InventoryService $inventoryService
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -94,8 +97,10 @@ class PricingController extends ApiController
                 return $this->errorResponse('Item not found in global catalog', 404);
             }
 
+            $stock = $this->inventoryService->calculateStock($storeId, $variant->id, $request->user());
+
             return $this->successResponse(
-                new \App\Http\Resources\VariantResource($variant),
+                new PosScanResource(['variant' => $variant, 'stock' => $stock]),
                 'Item scanned successfully'
             );
         } catch (\Exception $e) {

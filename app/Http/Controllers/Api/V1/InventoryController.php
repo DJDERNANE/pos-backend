@@ -13,6 +13,63 @@ class InventoryController extends ApiController
         private InventoryService $inventoryService
     ) {}
 
+    public function movements(Request $request): JsonResponse
+    {
+        $storeId = $request->query('store_id');
+        $variantId = $request->query('product_variant_id');
+        $type = $request->query('type');
+
+        try {
+            $movements = $this->inventoryService->getLedgerMovements($storeId, $variantId, $type, $request->user());
+            return $this->successResponse(
+                \App\Http\Resources\InventoryMovementResource::collection($movements),
+                'Inventory movements retrieved successfully'
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 403);
+        }
+    }
+
+    public function stock(Request $request, string $variantId): JsonResponse
+    {
+        $storeId = $request->query('store_id');
+
+        if (! $storeId) {
+            return $this->errorResponse('store_id is required', 400);
+        }
+
+        try {
+            $stock = $this->inventoryService->calculateStock($storeId, $variantId, $request->user());
+            return $this->successResponse(
+                new \App\Http\Resources\InventoryStockResource(['store_id' => $storeId, 'product_variant_id' => $variantId, 'stock' => $stock]),
+                'Stock retrieved successfully'
+            );
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 403);
+        }
+    }
+
+    public function adjust(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'store_id' => 'required|uuid|exists:stores,id',
+            'product_variant_id' => 'required|uuid|exists:product_variants,id',
+            'quantity' => 'required|numeric|min:0.0001',
+            'direction' => 'required|in:in,out',
+            'reference_type' => 'nullable|string|max:255',
+            'reference_id' => 'nullable|uuid',
+            'unit_cost' => 'nullable|numeric|min:0',
+            'notes' => 'nullable|string',
+        ]);
+
+        try {
+            $movement = $this->inventoryService->recordAdjustment($validated, $request->user());
+            return $this->successResponse(new \App\Http\Resources\InventoryMovementResource($movement), 'Inventory adjusted successfully', 201);
+        } catch (\Exception $e) {
+            return $this->errorResponse($e->getMessage(), 400);
+        }
+    }
+
     public function index(Request $request): JsonResponse
     {
         $storeId = $request->query('store_id');

@@ -20,10 +20,12 @@ class StorePriceResource extends JsonResource
             'product_variant_id' => $this->product_variant_id,
             'variant' => new VariantResource($this->whenLoaded('variant')),
             'unit_type' => $this->unit_type,
-            'price' => (float)$this->price,
-            'cost_price' => (float)$this->cost_price,
+            'sell_price' => (float)$this->sell_price,
+            'buy_price' => $this->buy_price === null ? null : (float)$this->buy_price,
+            'price' => (float)$this->sell_price,
+            'cost_price' => $this->buy_price === null ? null : (float)$this->buy_price,
             'quantity_per_unit' => (int)$this->quantity_per_unit,
-            'is_active' => (bool)$this->is_active,
+            'is_default' => (bool)$this->is_default,
             'created_at' => $this->created_at,
         ];
     }
